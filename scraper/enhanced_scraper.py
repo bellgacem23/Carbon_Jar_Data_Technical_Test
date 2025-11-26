@@ -47,13 +47,20 @@ def scrape_french_portal(url="http://hypothetical-french-gov-portal.fr/factors")
             EC.presence_of_element_located((By.ID, 'resultsTable'))
         )
         
+        # We wait for table to have some rows
+        WebDriverWait(driver, 10).until(
+            lambda driver: len(table.find_elements(By.TAG_NAME, 'tr')) > 1
+        )
+        
         rows = table.find_elements(By.TAG_NAME, 'tr')[1:]
         data = []
-        for row in rows:
+        for i, row in enumerate(rows):
             cols = row.find_elements(By.TAG_NAME, 'td')
-            
-            # On a ajouté une attente pour les éléments dans le Shadow DOM
-            shadow_host = WebDriverWait(driver, 10).until(
+            if len(cols) < 3:
+                logging.warning(f"Row {i} doesn't have enough columns, skipping")
+                continue
+                
+            shadow_host = WebDriverWait(row, 10).until(
                 EC.presence_of_element_located((By.TAG_NAME, 'factor-component'))
             )
             
