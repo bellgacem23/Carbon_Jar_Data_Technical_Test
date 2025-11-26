@@ -8,7 +8,19 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 def get_shadow_root(driver, element):
-    return driver.execute_script('return arguments[0].shadowRoot', element)
+    """Récupère le Shadow Root d'un élément de manière robuste"""
+    try:
+        if element is None:
+            raise ValueError("L'élément Shadow Host est null")
+        
+        shadow_root = driver.execute_script('return arguments[0].shadowRoot', element)
+        if shadow_root is None:
+            raise Exception("Shadow Root non trouvé pour l'élément")
+        
+        return shadow_root
+    except Exception as e:
+        logging.error(f"Échec récupération Shadow Root: {e}")
+        raise
 
 def scrape_french_portal(url="http://hypothetical-french-gov-portal.fr/factors"):
     options = webdriver.ChromeOptions()
@@ -16,7 +28,6 @@ def scrape_french_portal(url="http://hypothetical-french-gov-portal.fr/factors")
     try:
         driver.get(url)
         
-        # On a remplacé time.sleep par WebDriverWait 
         year_select = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.ID, 'yearSelect'))
         )
@@ -40,9 +51,19 @@ def scrape_french_portal(url="http://hypothetical-french-gov-portal.fr/factors")
         data = []
         for row in rows:
             cols = row.find_elements(By.TAG_NAME, 'td')
-            shadow_host = cols[2].find_element(By.TAG_NAME, 'factor-component')
+            
+            # On a ajouté une attente pour les éléments dans le Shadow DOM
+            shadow_host = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, 'factor-component'))
+            )
+            
             shadow_content = get_shadow_root(driver, shadow_host)
-            factor_value = shadow_content.find_element(By.CSS_SELECTOR, '.factor-val').text
+            
+            factor_value_element = WebDriverWait(shadow_content, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '.factor-val'))
+            )
+            factor_value = factor_value_element.text
+            
             data.append({'Sector': cols[0].text, 'Factor': factor_value})
         return data
     except Exception as e:
