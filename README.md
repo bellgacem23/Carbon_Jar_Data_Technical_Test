@@ -23,8 +23,8 @@ git clone https://github.com/bellgacem23/Carbon_Jar_Data_Technical_Test.git
 cd Carbon_Jar_Data_Technical_Test
 
 ### Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv my_env
+source my_env/bin/activate  # On Windows: my_env\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
